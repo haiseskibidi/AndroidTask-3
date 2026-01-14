@@ -1,0 +1,112 @@
+package ru.fefu.task3.ui.screens
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import ru.fefu.task3.ui.AnimeViewModel
+import ru.fefu.task3.ui.ListUiState
+import ru.fefu.task3.ui.components.AnimeItem
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.KeyboardType
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ListScreen(
+    viewModel: AnimeViewModel,
+    onAnimeClick: (Long) -> Unit,
+    onFavouritesClick: () -> Unit
+) {
+    val uiState by viewModel.listUiState.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
+    val focusManager = LocalFocusManager.current
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Шикимори") },
+                actions = {
+                    IconButton(onClick = onFavouritesClick) {
+                        Icon(Icons.Default.Favorite, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    }
+                }
+            )
+        }
+    ) { padding ->
+        Column(modifier = Modifier.padding(padding)) {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { viewModel.onSearchQueryChanged(it) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                placeholder = { Text("Найти аниме...") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = null,
+                            modifier = Modifier.clickable { viewModel.onSearchQueryChanged("") }
+                        )
+                    }
+                },
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp),
+                keyboardOptions = KeyboardOptions(
+                    imeAction = ImeAction.Search,
+                    keyboardType = KeyboardType.Text,
+                    autoCorrect = true
+                ),
+                keyboardActions = KeyboardActions(
+                    onSearch = { focusManager.clearFocus() }
+                )
+            )
+
+            when (val state = uiState) {
+                is ListUiState.Loading -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                }
+                is ListUiState.Error -> {
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text("Ошибка: ${state.message}", color = MaterialTheme.colorScheme.error)
+                        Button(onClick = { viewModel.loadAnimes(searchQuery.ifBlank { null }) }) {
+                            Text("Повторить")
+                        }
+                    }
+                }
+                is ListUiState.Empty -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("Аниме не найдено.")
+                    }
+                }
+                is ListUiState.Success -> {
+                    LazyColumn {
+                        items(state.animes) { anime ->
+                            AnimeItem(anime = anime, onClick = { onAnimeClick(anime.id) })
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
