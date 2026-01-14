@@ -11,7 +11,6 @@ import kotlinx.coroutines.launch
 import ru.fefu.task3.data.model.AnimeBase
 import ru.fefu.task3.data.model.AnimeDetails
 import ru.fefu.task3.data.repository.AnimeRepository
-import ru.fefu.task3.util.TrigramUtil
 
 sealed class ListUiState {
     object Loading : ListUiState()
@@ -53,16 +52,11 @@ class AnimeViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val result = repository.getAnimes(query)
-                val sortedResult = if (!query.isNullOrBlank()) {
-                    result.sortedByDescending { anime ->
-                        val simName = TrigramUtil.calculateSimilarity(query, anime.name)
-                        val simRus = TrigramUtil.calculateSimilarity(query, anime.russian)
-                        maxOf(simName, simRus)
-                    }
-                } else result
-
-                if (sortedResult.isEmpty()) _listUiState.value = ListUiState.Empty
-                else _listUiState.value = ListUiState.Success(sortedResult)
+                if (result.isEmpty()) {
+                    _listUiState.value = ListUiState.Empty
+                } else {
+                    _listUiState.value = ListUiState.Success(result)
+                }
             } catch (e: Exception) {
                 _listUiState.value = ListUiState.Error(e.localizedMessage ?: "Unknown error")
             }
@@ -74,8 +68,11 @@ class AnimeViewModel : ViewModel() {
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
             delay(500)
-            if (newQuery.isBlank()) loadAnimes(null)
-            else loadAnimes(newQuery)
+            if (newQuery.isBlank()) {
+                loadAnimes(null)
+            } else {
+                loadAnimes(newQuery)
+            }
         }
     }
 
@@ -103,8 +100,11 @@ class AnimeViewModel : ViewModel() {
             status = animeDetails.status
         )
         
-        if (repository.isFavourite(animeDetails.id)) repository.removeFromFavourites(animeDetails.id)
-        else repository.addToFavourites(base)
+        if (repository.isFavourite(animeDetails.id)) {
+            repository.removeFromFavourites(animeDetails.id)
+        } else {
+            repository.addToFavourites(base)
+        }
         
         val current = _detailUiState.value
         if (current is DetailUiState.Success) {
