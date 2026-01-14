@@ -1,0 +1,174 @@
+package ru.fefu.task3.ui.screens
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import ru.fefu.task3.ui.AnimeViewModel
+import ru.fefu.task3.ui.DetailUiState
+import ru.fefu.task3.ui.components.AnimeItem
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DetailScreen(
+    animeId: Long,
+    viewModel: AnimeViewModel,
+    onBackClick: () -> Unit
+) {
+    LaunchedEffect(animeId) {
+        viewModel.loadAnimeDetails(animeId)
+    }
+
+    val uiState by viewModel.detailUiState.collectAsState()
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Информация") },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                    }
+                },
+                actions = {
+                    if (uiState is DetailUiState.Success) {
+                        val state = uiState as DetailUiState.Success
+                        IconButton(onClick = { viewModel.toggleFavourite(state.anime) }) {
+                            Icon(
+                                imageVector = if (state.isFavourite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = null,
+                                tint = if (state.isFavourite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+            )
+        }
+    ) { padding ->
+        Box(modifier = Modifier.padding(padding).fillMaxSize()) {
+            when (val state = uiState) {
+                is DetailUiState.Loading -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                }
+                is DetailUiState.Error -> {
+                    Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text("Ошибка: ${state.message}", color = MaterialTheme.colorScheme.error)
+                        Button(onClick = { viewModel.loadAnimeDetails(animeId) }) {
+                            Text("Повторить")
+                        }
+                    }
+                }
+                is DetailUiState.Success -> {
+                    val anime = state.anime
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                    ) {
+                        AsyncImage(
+                            model = anime.getImageUrl(),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(350.dp),
+                            contentScale = ContentScale.Crop
+                        )
+                        Column(modifier = Modifier.padding(20.dp)) {
+                            Text(
+                                text = anime.getDisplayName(),
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                            
+                            Row(
+                                modifier = Modifier.padding(vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                SuggestionChip(
+                                    onClick = { },
+                                    label = { Text(anime.getRussianKind()) },
+                                    shape = RoundedCornerShape(8.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                SuggestionChip(
+                                    onClick = { },
+                                    label = { Text(anime.getRussianStatus()) },
+                                    shape = RoundedCornerShape(8.dp)
+                                )
+                            }
+
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                InfoColumn("Рейтинг", anime.score ?: "N/A")
+                                InfoColumn("Эпизоды", anime.episodes?.toString() ?: "?")
+                                InfoColumn("Год", anime.airedOn?.take(4) ?: "?")
+                            }
+
+                            Spacer(modifier = Modifier.height(24.dp))
+                            Text(
+                                "Описание",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = anime.getCleanDescription() ?: "Описание отсутствует.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                lineHeight = 22.sp
+                            )
+                            
+                            if (!anime.genres.isNullOrEmpty()) {
+                                Spacer(modifier = Modifier.height(24.dp))
+                                Text(
+                                    "Жанры",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = anime.genres.joinToString { it.russian ?: it.name },
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(top = 8.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun InfoColumn(label: String, value: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+    }
+}
