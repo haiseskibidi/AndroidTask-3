@@ -11,32 +11,29 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import ru.fefu.task3.ui.AnimeViewModel
+import ru.fefu.task3.data.model.AnimeDetails
 import ru.fefu.task3.ui.DetailUiState
-import ru.fefu.task3.ui.components.AnimeItem
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailScreen(
     animeId: Long,
-    viewModel: AnimeViewModel,
-    onBackClick: () -> Unit
+    uiState: DetailUiState,
+    onLoad: (Long) -> Unit,
+    onRetryClick: () -> Unit,
+    onBackClick: () -> Unit,
+    onToggleFavourite: (AnimeDetails) -> Unit
 ) {
     LaunchedEffect(animeId) {
-        viewModel.loadAnimeDetails(animeId)
+        onLoad(animeId)
     }
-
-    val uiState by viewModel.detailUiState.collectAsState()
 
     Scaffold(
         topBar = {
@@ -50,7 +47,7 @@ fun DetailScreen(
                 actions = {
                     if (uiState is DetailUiState.Success) {
                         val state = uiState as DetailUiState.Success
-                        IconButton(onClick = { viewModel.toggleFavourite(state.anime) }) {
+                        IconButton(onClick = { onToggleFavourite(state.anime) }) {
                             Icon(
                                 imageVector = if (state.isFavourite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                                 contentDescription = null,
@@ -75,7 +72,7 @@ fun DetailScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text("Ошибка: ${state.message}", color = MaterialTheme.colorScheme.error)
-                        Button(onClick = { viewModel.loadAnimeDetails(animeId) }) {
+                        Button(onClick = onRetryClick) {
                             Text("Повторить")
                         }
                     }

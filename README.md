@@ -1,17 +1,17 @@
-# Домашнее задание 3 - Android Application
-
 **Выполнил:** Копаницкий Захар Александрович
 **Группа:** ПИКД 7
 
 ---
 
 ## API
+
 **Название:** Shikimori API
 **Ссылка:** `https://shikimori.one/api/doc/1.0`
 **Что дает:** Предоставляет информацию об аниме (списки, поиск, детали, рейтинги, постеры).
 **Ключ:** Не требуется (Open API).
 
 ## Запуск
+
 1. Открыть проект в Android Studio.
 2. Дождаться синхронизации Gradle.
 3. Запустить на эмуляторе или реальном устройстве (Android 7.0+).
@@ -19,41 +19,36 @@
 
 ## Скриншоты
 
+
 | Loading | Error |
 |:---:|:---:|
 | <img src="screenshots/Loading.png" width="200"/> | <img src="screenshots/Error.png" width="200"/> |
 
-| List | Detail | Favourites |
+| List | Detail | Favourites (Room State) |
 |:---:|:---:|:---:|
-| <img src="screenshots/List.png" width="200"/> | <img src="screenshots/Detail.png" width="200"/> | <img src="screenshots/Favourites.png" width="200"/> |
+| <img src="screenshots/List.png" width="200"/> | <img src="screenshots/Detail.png" width="200"/> | <img src="screenshots/Favourites%20(Room%20state).png" width="200"/> |
+
 
 ---
 
-## Чеклист (выполнено)
+## Домашнее задание 4 (Hilt + Room)
 
-### Обязательный функционал
-- [x] **A) Навигация:** Реализовано 3 экрана (List, Detail, Favourites) через Navigation Compose.
-- [x] **B) Архитектура:**
-    - UI State (Loading, Error, Success, Empty).
-    - ViewModel (AnimeViewModel).
-    - Repository (AnimeRepository).
-    - UI максимально stateless.
-- [x] **C) Coroutines + Retrofit:** Все запросы асинхронны, запускаются в `viewModelScope`.
-- [x] **D) UI состояния:**
-    - Loading (индикатор).
-    - Error (сообщение + кнопка Retry).
-    - Empty (заглушка).
-    - Success (список данных).
-- [x] **E) Избранное:** Локальное сохранение в памяти (переживает поворот экрана).
+### Hilt
 
-### Технические требования
-- [x] Jetpack Compose + Material3.
-- [x] Navigation Compose.
-- [x] ViewModel + viewModelScope.
-- [x] Retrofit + Gson.
-- [x] Без Flow (использовался StateFlow, что соответствует требованиям "можно").
+- DI подключён и используется (`@HiltAndroidApp`, `@HiltViewModel`, `@AndroidEntryPoint`).
+- Зависимости (Retrofit, Room, Repository) инжектятся через конструкторы, а не создаются внутри классов.
+- Решены проблемы с тесной связанностью слоёв (repository прилетает извне).
 
-### Бонусы
-- [x] **Debounce поиска:** Реализовано через `Job + delay(500ms)` во ViewModel.
-- [x] **Экран Favourites:** Вынесен в отдельный route навигации.
-- [x] **Логирование запросов:** Подключен `HttpLoggingInterceptor`.
+### Room
+
+- **Сценарий:** `Favourites` (Избранное).
+- **Что храним:** Сохраняются базовые данные об аниме (название, постер, рейтинг, статус) в таблице `favourites` (сущность `AnimeEntity`).
+- **Как проверить:**
+  1. Открыть приложение, дождаться загрузки списка.
+  2. Перейти в детали любого аниме и нажать на сердечко (добавить в Избранное).
+  3. Открыть экран "Избранное" (иконка сердечка на главном экране) — убедиться, что аниме там появилось.
+  4. Полностью закрыть приложение (свайпнуть из недавних/Recent Apps).
+  5. Открыть приложение заново, перейти в "Избранное" — добавленное аниме должно остаться на месте (пережило перезапуск).
+
+---
+

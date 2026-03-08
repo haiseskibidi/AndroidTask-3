@@ -28,7 +28,7 @@ data class AnimeBase(
     fun getRussianStatus(): String = when (status?.lowercase()) {
         "released" -> "Вышло"
         "ongoing" -> "Онгоинг"
-        "anounced" -> "Анонсировано"
+        "announced" -> "Анонсировано"
         else -> status ?: "Неизвестно"
     }
 }
@@ -69,7 +69,7 @@ data class AnimeDetails(
     fun getRussianStatus(): String = when (status?.lowercase()) {
         "released" -> "Вышло"
         "ongoing" -> "Онгоинг"
-        "anounced" -> "Анонсировано"
+        "announced" -> "Анонсировано"
         else -> status ?: "Неизвестно"
     }
 }

@@ -14,7 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import ru.fefu.task3.ui.AnimeViewModel
+import ru.fefu.task3.ui.ListEvent
 import ru.fefu.task3.ui.ListUiState
 import ru.fefu.task3.ui.components.AnimeItem
 import androidx.compose.ui.text.input.ImeAction
@@ -26,12 +26,12 @@ import androidx.compose.ui.text.input.KeyboardType
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ListScreen(
-    viewModel: AnimeViewModel,
+    uiState: ListUiState,
+    searchQuery: String,
+    onEvent: (ListEvent) -> Unit,
     onAnimeClick: (Long) -> Unit,
     onFavouritesClick: () -> Unit
 ) {
-    val uiState by viewModel.listUiState.collectAsState()
-    val searchQuery by viewModel.searchQuery.collectAsState()
     val focusManager = LocalFocusManager.current
 
     Scaffold(
@@ -49,7 +49,7 @@ fun ListScreen(
         Column(modifier = Modifier.padding(padding)) {
             OutlinedTextField(
                 value = searchQuery,
-                onValueChange = { viewModel.onSearchQueryChanged(it) },
+                onValueChange = { onEvent(ListEvent.SearchQueryChanged(it)) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(12.dp),
@@ -60,7 +60,7 @@ fun ListScreen(
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = null,
-                            modifier = Modifier.clickable { viewModel.onSearchQueryChanged("") }
+                            modifier = Modifier.clickable { onEvent(ListEvent.SearchQueryChanged("")) }
                         )
                     }
                 },
@@ -89,7 +89,7 @@ fun ListScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text("Ошибка: ${state.message}", color = MaterialTheme.colorScheme.error)
-                        Button(onClick = { viewModel.loadAnimes(searchQuery.ifBlank { null }) }) {
+                        Button(onClick = { onEvent(ListEvent.Retry) }) {
                             Text("Повторить")
                         }
                     }

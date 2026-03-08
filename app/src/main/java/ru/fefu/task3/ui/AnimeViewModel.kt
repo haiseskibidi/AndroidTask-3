@@ -2,15 +2,22 @@ package ru.fefu.task3.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import ru.fefu.task3.data.model.AnimeBase
 import ru.fefu.task3.data.model.AnimeDetails
 import ru.fefu.task3.data.repository.AnimeRepository
+import ru.fefu.task3.data.toAnimeBase
+import ru.fefu.task3.data.toEntity
+import javax.inject.Inject
 
 sealed class ListUiState {
     object Loading : ListUiState()
@@ -25,8 +32,15 @@ sealed class DetailUiState {
     data class Error(val message: String) : DetailUiState()
 }
 
-class AnimeViewModel : ViewModel() {
-    private val repository = AnimeRepository()
+sealed interface ListEvent {
+    data class SearchQueryChanged(val query: String) : ListEvent
+    object Retry : ListEvent
+}
+
+@HiltViewModel
+class AnimeViewModel @Inject constructor(
+    private val repository: AnimeRepository
+) : ViewModel() {
 
     private val _listUiState = MutableStateFlow<ListUiState>(ListUiState.Loading)
     val listUiState: StateFlow<ListUiState> = _listUiState.asStateFlow()
@@ -37,17 +51,39 @@ class AnimeViewModel : ViewModel() {
     private val _detailUiState = MutableStateFlow<DetailUiState>(DetailUiState.Loading)
     val detailUiState: StateFlow<DetailUiState> = _detailUiState.asStateFlow()
 
-    private val _favouritesList = MutableStateFlow<List<AnimeBase>>(emptyList())
-    val favouritesList: StateFlow<List<AnimeBase>> = _favouritesList.asStateFlow()
+    val favouritesList: StateFlow<List<AnimeBase>> = repository.getFavouriteAnimes()
+        .map { list -> list.map { it.toAnimeBase() } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private var searchJob: Job? = null
+    private var detailJob: Job? = null
+    private var favouriteJob: Job? = null
 
     init {
         loadAnimes()
-        refreshFavourites()
     }
 
-    fun loadAnimes(query: String? = null) {
+    fun onListEvent(event: ListEvent) {
+        when (event) {
+            is ListEvent.SearchQueryChanged -> {
+                _searchQuery.value = event.query
+                searchJob?.cancel()
+                searchJob = viewModelScope.launch {
+                    delay(500)
+                    if (event.query.isBlank()) {
+                        loadAnimes(null)
+                    } else {
+                        loadAnimes(event.query)
+                    }
+                }
+            }
+            ListEvent.Retry -> {
+                loadAnimes(_searchQuery.value.ifBlank { null })
+            }
+        }
+    }
+
+    private fun loadAnimes(query: String? = null) {
         _listUiState.value = ListUiState.Loading
         viewModelScope.launch {
             try {
@@ -63,26 +99,24 @@ class AnimeViewModel : ViewModel() {
         }
     }
 
-    fun onSearchQueryChanged(newQuery: String) {
-        _searchQuery.value = newQuery
-        searchJob?.cancel()
-        searchJob = viewModelScope.launch {
-            delay(500)
-            if (newQuery.isBlank()) {
-                loadAnimes(null)
-            } else {
-                loadAnimes(newQuery)
-            }
-        }
-    }
-
     fun loadAnimeDetails(id: Long) {
+        detailJob?.cancel()
+        favouriteJob?.cancel()
         _detailUiState.value = DetailUiState.Loading
-        viewModelScope.launch {
+        
+        detailJob = viewModelScope.launch {
             try {
                 val details = repository.getAnimeDetails(id)
-                val isFav = repository.isFavourite(id)
-                _detailUiState.value = DetailUiState.Success(details, isFav)
+                favouriteJob = launch {
+                    repository.isFavourite(id).collect { isFav ->
+                        val currentState = _detailUiState.value
+                        if (currentState is DetailUiState.Success) {
+                            _detailUiState.value = currentState.copy(isFavourite = isFav)
+                        } else {
+                            _detailUiState.value = DetailUiState.Success(details, isFav)
+                        }
+                    }
+                }
             } catch (e: Exception) {
                 _detailUiState.value = DetailUiState.Error(e.localizedMessage ?: "Unknown error")
             }
@@ -90,30 +124,13 @@ class AnimeViewModel : ViewModel() {
     }
 
     fun toggleFavourite(animeDetails: AnimeDetails) {
-        val base = AnimeBase(
-            id = animeDetails.id,
-            name = animeDetails.name,
-            russian = animeDetails.russian,
-            image = animeDetails.image,
-            score = animeDetails.score,
-            kind = animeDetails.kind,
-            status = animeDetails.status
-        )
-        
-        if (repository.isFavourite(animeDetails.id)) {
-            repository.removeFromFavourites(animeDetails.id)
-        } else {
-            repository.addToFavourites(base)
+        viewModelScope.launch {
+            val isFav = repository.isFavouriteSync(animeDetails.id)
+            if (isFav) {
+                repository.removeFromFavourites(animeDetails.id)
+            } else {
+                repository.addToFavourites(animeDetails.toEntity())
+            }
         }
-        
-        val current = _detailUiState.value
-        if (current is DetailUiState.Success) {
-            _detailUiState.value = current.copy(isFavourite = repository.isFavourite(animeDetails.id))
-        }
-        refreshFavourites()
-    }
-
-    private fun refreshFavourites() {
-        _favouritesList.value = repository.getFavouriteAnimes()
     }
 }

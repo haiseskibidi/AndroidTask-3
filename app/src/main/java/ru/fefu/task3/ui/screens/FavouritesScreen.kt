@@ -7,22 +7,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import ru.fefu.task3.ui.AnimeViewModel
+import ru.fefu.task3.data.model.AnimeBase
 import ru.fefu.task3.ui.components.AnimeItem
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FavouritesScreen(
-    viewModel: AnimeViewModel,
+    favourites: List<AnimeBase>,
     onBackClick: () -> Unit,
     onAnimeClick: (Long) -> Unit
 ) {
-    val favourites by viewModel.favouritesList.collectAsState()
-
     Scaffold(
         topBar = {
             TopAppBar(
