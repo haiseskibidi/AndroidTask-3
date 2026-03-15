@@ -46,12 +46,11 @@ fun DetailScreen(
                 },
                 actions = {
                     if (uiState is DetailUiState.Success) {
-                        val state = uiState as DetailUiState.Success
-                        IconButton(onClick = { onToggleFavourite(state.anime) }) {
+                        IconButton(onClick = { onToggleFavourite(uiState.anime) }) {
                             Icon(
-                                imageVector = if (state.isFavourite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                imageVector = if (uiState.isFavourite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                                 contentDescription = null,
-                                tint = if (state.isFavourite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                tint = if (uiState.isFavourite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                             )
                         }
                     }
@@ -103,17 +102,27 @@ fun DetailScreen(
                                 modifier = Modifier.padding(vertical = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                SuggestionChip(
-                                    onClick = { },
-                                    label = { Text(anime.getRussianKind()) },
+                                Surface(
+                                    color = MaterialTheme.colorScheme.secondaryContainer,
                                     shape = RoundedCornerShape(8.dp)
-                                )
+                                ) {
+                                    Text(
+                                        text = anime.getRussianKind(),
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                        style = MaterialTheme.typography.labelLarge
+                                    )
+                                }
                                 Spacer(modifier = Modifier.width(8.dp))
-                                SuggestionChip(
-                                    onClick = { },
-                                    label = { Text(anime.getRussianStatus()) },
+                                Surface(
+                                    color = MaterialTheme.colorScheme.tertiaryContainer,
                                     shape = RoundedCornerShape(8.dp)
-                                )
+                                ) {
+                                    Text(
+                                        text = anime.getRussianStatus(),
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                        style = MaterialTheme.typography.labelLarge
+                                    )
+                                }
                             }
 
                             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))

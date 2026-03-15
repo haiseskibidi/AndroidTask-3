@@ -7,9 +7,12 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 import ru.fefu.task3.data.db.AnimeDao
 import ru.fefu.task3.data.db.AppDatabase
-import ru.fefu.task3.data.network.RetrofitClient
 import ru.fefu.task3.data.network.ShikimoriApi
 import ru.fefu.task3.data.repository.AnimeRepository
 import javax.inject.Singleton
@@ -17,6 +20,38 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
+
+    private const val BASE_URL = "https://shikimori.one/api/"
+
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(): OkHttpClient {
+        return OkHttpClient.Builder()
+            .addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY })
+            .addInterceptor { chain ->
+                val request = chain.request().newBuilder()
+                    .header("User-Agent", "Task3HomeworkApp/1.0")
+                    .build()
+                chain.proceed(request)
+            }
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideShikimoriApi(retrofit: Retrofit): ShikimoriApi {
+        return retrofit.create(ShikimoriApi::class.java)
+    }
 
     @Provides
     @Singleton
@@ -31,12 +66,6 @@ object AppModule {
     @Provides
     fun provideAnimeDao(database: AppDatabase): AnimeDao {
         return database.animeDao()
-    }
-
-    @Provides
-    @Singleton
-    fun provideShikimoriApi(): ShikimoriApi {
-        return RetrofitClient.api
     }
 
     @Provides

@@ -3,14 +3,10 @@ package ru.fefu.task3.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import ru.fefu.task3.data.model.AnimeBase
 import ru.fefu.task3.data.model.AnimeDetails
@@ -42,11 +38,31 @@ class AnimeViewModel @Inject constructor(
     private val repository: AnimeRepository
 ) : ViewModel() {
 
-    private val _listUiState = MutableStateFlow<ListUiState>(ListUiState.Loading)
-    val listUiState: StateFlow<ListUiState> = _listUiState.asStateFlow()
-
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    private val _retryTrigger = MutableSharedFlow<Unit>(replay = 0)
+
+    @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
+    val listUiState: StateFlow<ListUiState> = combine(_searchQuery, _retryTrigger.onStart { emit(Unit) }) { query, _ -> query }
+        .debounce { if (it.isEmpty()) 0L else 500L }
+        .distinctUntilChanged()
+        .flatMapLatest { query ->
+            flow {
+                emit(ListUiState.Loading)
+                try {
+                    val result = repository.getAnimes(query.ifBlank { null })
+                    if (result.isEmpty()) {
+                        emit(ListUiState.Empty)
+                    } else {
+                        emit(ListUiState.Success(result))
+                    }
+                } catch (e: Exception) {
+                    emit(ListUiState.Error(e.localizedMessage ?: "Unknown error"))
+                }
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ListUiState.Loading)
 
     private val _detailUiState = MutableStateFlow<DetailUiState>(DetailUiState.Loading)
     val detailUiState: StateFlow<DetailUiState> = _detailUiState.asStateFlow()
@@ -55,46 +71,18 @@ class AnimeViewModel @Inject constructor(
         .map { list -> list.map { it.toAnimeBase() } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    private var searchJob: Job? = null
     private var detailJob: Job? = null
     private var favouriteJob: Job? = null
-
-    init {
-        loadAnimes()
-    }
 
     fun onListEvent(event: ListEvent) {
         when (event) {
             is ListEvent.SearchQueryChanged -> {
                 _searchQuery.value = event.query
-                searchJob?.cancel()
-                searchJob = viewModelScope.launch {
-                    delay(500)
-                    if (event.query.isBlank()) {
-                        loadAnimes(null)
-                    } else {
-                        loadAnimes(event.query)
-                    }
-                }
             }
             ListEvent.Retry -> {
-                loadAnimes(_searchQuery.value.ifBlank { null })
-            }
-        }
-    }
-
-    private fun loadAnimes(query: String? = null) {
-        _listUiState.value = ListUiState.Loading
-        viewModelScope.launch {
-            try {
-                val result = repository.getAnimes(query)
-                if (result.isEmpty()) {
-                    _listUiState.value = ListUiState.Empty
-                } else {
-                    _listUiState.value = ListUiState.Success(result)
+                viewModelScope.launch {
+                    _retryTrigger.emit(Unit)
                 }
-            } catch (e: Exception) {
-                _listUiState.value = ListUiState.Error(e.localizedMessage ?: "Unknown error")
             }
         }
     }
@@ -109,11 +97,12 @@ class AnimeViewModel @Inject constructor(
                 val details = repository.getAnimeDetails(id)
                 favouriteJob = launch {
                     repository.isFavourite(id).collect { isFav ->
-                        val currentState = _detailUiState.value
-                        if (currentState is DetailUiState.Success) {
-                            _detailUiState.value = currentState.copy(isFavourite = isFav)
-                        } else {
-                            _detailUiState.value = DetailUiState.Success(details, isFav)
+                        _detailUiState.update { state ->
+                            if (state is DetailUiState.Success) {
+                                state.copy(isFavourite = isFav)
+                            } else {
+                                DetailUiState.Success(details, isFav)
+                            }
                         }
                     }
                 }
@@ -125,12 +114,7 @@ class AnimeViewModel @Inject constructor(
 
     fun toggleFavourite(animeDetails: AnimeDetails) {
         viewModelScope.launch {
-            val isFav = repository.isFavouriteSync(animeDetails.id)
-            if (isFav) {
-                repository.removeFromFavourites(animeDetails.id)
-            } else {
-                repository.addToFavourites(animeDetails.toEntity())
-            }
+            repository.toggleFavourite(animeDetails.toEntity())
         }
     }
 }

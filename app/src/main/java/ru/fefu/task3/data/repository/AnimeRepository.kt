@@ -2,6 +2,8 @@ package ru.fefu.task3.data.repository
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import ru.fefu.task3.data.db.AnimeDao
 import ru.fefu.task3.data.db.AnimeEntity
@@ -16,6 +18,7 @@ class AnimeRepository @Inject constructor(
     private val api: ShikimoriApi,
     private val dao: AnimeDao
 ) {
+    private val favouriteMutex = Mutex()
 
     suspend fun getAnimes(search: String? = null): List<AnimeBase> = withContext(Dispatchers.IO) {
         api.getAnimes(search = search)
@@ -39,5 +42,16 @@ class AnimeRepository @Inject constructor(
     
     suspend fun removeFromFavourites(animeId: Long) = withContext(Dispatchers.IO) {
         dao.removeFromFavourites(animeId)
+    }
+
+    suspend fun toggleFavourite(entity: AnimeEntity) = withContext(Dispatchers.IO) {
+        favouriteMutex.withLock {
+            val isFav = dao.isFavouriteSync(entity.id)
+            if (isFav) {
+                dao.removeFromFavourites(entity.id)
+            } else {
+                dao.addToFavourites(entity)
+            }
+        }
     }
 }
