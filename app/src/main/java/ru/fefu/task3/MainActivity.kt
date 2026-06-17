@@ -4,9 +4,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -32,9 +32,9 @@ class MainActivity : ComponentActivity() {
 
                 NavHost(navController = navController, startDestination = Screen.List.route) {
                     composable(Screen.List.route) {
-                        val uiState by viewModel.listUiState.collectAsState()
-                        val searchQuery by viewModel.searchQuery.collectAsState()
-                        
+                        val uiState by viewModel.listUiState.collectAsStateWithLifecycle()
+                        val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+
                         ListScreen(
                             uiState = uiState,
                             searchQuery = searchQuery,
@@ -45,8 +45,8 @@ class MainActivity : ComponentActivity() {
                     }
 
                     composable(Screen.Favourites.route) {
-                        val favourites by viewModel.favouritesList.collectAsState()
-                        
+                        val favourites by viewModel.favouritesList.collectAsStateWithLifecycle()
+
                         FavouritesScreen(
                             favourites = favourites,
                             onBackClick = { navController.popBackStack() },
@@ -59,8 +59,8 @@ class MainActivity : ComponentActivity() {
                         arguments = listOf(navArgument("animeId") { type = NavType.LongType })
                     ) { backStackEntry ->
                         val animeId = backStackEntry.arguments?.getLong("animeId") ?: return@composable
-                        val uiState by viewModel.detailUiState.collectAsState()
-                        
+                        val uiState by viewModel.detailUiState.collectAsStateWithLifecycle()
+
                         DetailScreen(
                             animeId = animeId,
                             uiState = uiState,

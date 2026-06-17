@@ -12,6 +12,9 @@ import androidx.compose.ui.Modifier
 import ru.fefu.task3.data.model.AnimeBase
 import ru.fefu.task3.ui.components.AnimeItem
 
+import androidx.compose.ui.res.stringResource
+import ru.fefu.task3.R
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FavouritesScreen(
@@ -22,7 +25,7 @@ fun FavouritesScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Избранное") },
+                title = { Text(stringResource(R.string.favourites_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
@@ -36,7 +39,7 @@ fun FavouritesScreen(
                 modifier = Modifier.fillMaxSize().padding(padding),
                 contentAlignment = Alignment.Center
             ) {
-                Text("В избранном пока пусто.")
+                Text(stringResource(R.string.favourites_empty))
             }
         } else {
             LazyColumn(modifier = Modifier.padding(padding)) {

@@ -15,33 +15,32 @@ import ru.fefu.task3.data.db.AnimeDao
 import ru.fefu.task3.data.db.AppDatabase
 import ru.fefu.task3.data.network.ShikimoriApi
 import ru.fefu.task3.data.repository.AnimeRepository
+import ru.fefu.task3.BuildConfig
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
 
-    private const val BASE_URL = "https://shikimori.one/api/"
-
     @Provides
     @Singleton
-    fun provideOkHttpClient(): OkHttpClient {
-        return OkHttpClient.Builder()
-            .addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY })
-            .addInterceptor { chain ->
-                val request = chain.request().newBuilder()
+    fun provideOkHttpClient(): OkHttpClient = OkHttpClient.Builder()
+        .addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY })
+        .addInterceptor { chain ->
+            chain.proceed(
+                chain.request().newBuilder()
                     .header("User-Agent", "Task3HomeworkApp/1.0")
                     .build()
-                chain.proceed(request)
-            }
-            .build()
-    }
+            )
+        }
+        .build()
 
     @Provides
     @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
+        val baseUrl = BuildConfig.API_BASE_URL.ifBlank { "https://shikimori.one/api/" }
         return Retrofit.Builder()
-            .baseUrl(BASE_URL)
+            .baseUrl(baseUrl)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()

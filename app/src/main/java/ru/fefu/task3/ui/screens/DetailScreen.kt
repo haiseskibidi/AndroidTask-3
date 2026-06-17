@@ -14,12 +14,16 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import ru.fefu.task3.R
 import ru.fefu.task3.data.model.AnimeDetails
 import ru.fefu.task3.ui.DetailUiState
+import ru.fefu.task3.ui.components.toRussianKind
+import ru.fefu.task3.ui.components.toRussianStatus
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,7 +42,7 @@ fun DetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Информация") },
+                title = { Text(stringResource(R.string.details_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
@@ -70,9 +74,9 @@ fun DetailScreen(
                         modifier = Modifier.align(Alignment.Center),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text("Ошибка: ${state.message}", color = MaterialTheme.colorScheme.error)
+                        Text(stringResource(R.string.error_prefix, state.message), color = MaterialTheme.colorScheme.error)
                         Button(onClick = onRetryClick) {
-                            Text("Повторить")
+                            Text(stringResource(R.string.retry_button))
                         }
                     }
                 }
@@ -107,7 +111,7 @@ fun DetailScreen(
                                     shape = RoundedCornerShape(8.dp)
                                 ) {
                                     Text(
-                                        text = anime.getRussianKind(),
+                                        text = anime.kind.toRussianKind(),
                                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                         style = MaterialTheme.typography.labelLarge
                                     )
@@ -118,7 +122,7 @@ fun DetailScreen(
                                     shape = RoundedCornerShape(8.dp)
                                 ) {
                                     Text(
-                                        text = anime.getRussianStatus(),
+                                        text = anime.status.toRussianStatus(),
                                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                         style = MaterialTheme.typography.labelLarge
                                     )
@@ -131,20 +135,20 @@ fun DetailScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                InfoColumn("Рейтинг", anime.score ?: "N/A")
-                                InfoColumn("Эпизоды", anime.episodes?.toString() ?: "?")
-                                InfoColumn("Год", anime.airedOn?.take(4) ?: "?")
+                                InfoColumn(stringResource(R.string.info_label_rating), anime.score ?: "N/A")
+                                InfoColumn(stringResource(R.string.info_label_episodes), anime.episodes?.toString() ?: "?")
+                                InfoColumn(stringResource(R.string.info_label_year), anime.airedOn?.take(4) ?: "?")
                             }
 
                             Spacer(modifier = Modifier.height(24.dp))
                             Text(
-                                "Описание",
+                                stringResource(R.string.description_label),
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = anime.getCleanDescription() ?: "Описание отсутствует.",
+                                text = anime.getCleanDescription() ?: stringResource(R.string.description_missing),
                                 style = MaterialTheme.typography.bodyMedium,
                                 lineHeight = 22.sp
                             )
@@ -152,7 +156,7 @@ fun DetailScreen(
                             if (!anime.genres.isNullOrEmpty()) {
                                 Spacer(modifier = Modifier.height(24.dp))
                                 Text(
-                                    "Жанры",
+                                    stringResource(R.string.genres_label),
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Bold
                                 )

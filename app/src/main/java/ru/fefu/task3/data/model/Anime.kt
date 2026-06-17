@@ -1,76 +1,55 @@
 package ru.fefu.task3.data.model
 
-import com.google.gson.annotations.SerializedName
-
-data class AnimeBase(
-    val id: Long,
-    val name: String,
-    val russian: String?,
-    val image: AnimeImage?,
-    val score: String?,
-    val kind: String?,
+interface AnimeModel {
+    val id: Long
+    val name: String
+    val russian: String?
+    val image: AnimeImage?
+    val score: String?
+    val kind: String?
     val status: String?
-) {
-    fun getImageUrl(): String? = image?.original?.let { "https://shikimori.one$it" }
-    
-    fun getDisplayName(): String = if (!russian.isNullOrBlank()) russian else name
 
-    fun getRussianKind(): String = when (kind?.lowercase()) {
-        "tv" -> "TV Сериал"
-        "movie" -> "Фильм"
-        "ova" -> "OVA"
-        "ona" -> "ONA"
-        "special" -> "Спешл"
-        "music" -> "Клип"
-        else -> kind ?: "Неизвестно"
+    fun getImageUrl(): String? {
+        val original = image?.original ?: return null
+        return if (original.startsWith("/")) {
+            "https://shikimori.one$original"
+        } else {
+            original
+        }
     }
-
-    fun getRussianStatus(): String = when (status?.lowercase()) {
-        "released" -> "Вышло"
-        "ongoing" -> "Онгоинг"
-        "announced" -> "Анонсировано"
-        else -> status ?: "Неизвестно"
-    }
+    fun getDisplayName(): String = russian?.takeIf { it.isNotBlank() } ?: name
 }
 
+data class AnimeBase(
+    override val id: Long,
+    override val name: String,
+    override val russian: String?,
+    override val image: AnimeImage?,
+    override val score: String?,
+    override val kind: String?,
+    override val status: String?
+) : AnimeModel
+
 data class AnimeDetails(
-    val id: Long,
-    val name: String,
-    val russian: String?,
-    val image: AnimeImage?,
-    val score: String?,
-    val kind: String?,
-    val status: String?,
+    override val id: Long,
+    override val name: String,
+    override val russian: String?,
+    override val image: AnimeImage?,
+    override val score: String?,
+    override val kind: String?,
+    override val status: String?,
     val description: String?,
-    @SerializedName("description_html") val descriptionHtml: String?,
+    val descriptionHtml: String?,
     val episodes: Int?,
-    @SerializedName("aired_on") val airedOn: String?,
+    val airedOn: String?,
     val genres: List<Genre>?
-) {
-    fun getImageUrl(): String? = image?.original?.let { "https://shikimori.one$it" }
-    
-    fun getDisplayName(): String = if (!russian.isNullOrBlank()) russian else name
-
+) : AnimeModel {
     fun getCleanDescription(): String? {
-        val textToClean = description ?: descriptionHtml?.replace(Regex("<.*?>"), "")
-        return textToClean?.replace(Regex("""\[.*?\]"""), "")
-    }
-
-    fun getRussianKind(): String = when (kind?.lowercase()) {
-        "tv" -> "TV Сериал"
-        "movie" -> "Фильм"
-        "ova" -> "OVA"
-        "ona" -> "ONA"
-        "special" -> "Спешл"
-        "music" -> "Клип"
-        else -> kind ?: "Неизвестно"
-    }
-
-    fun getRussianStatus(): String = when (status?.lowercase()) {
-        "released" -> "Вышло"
-        "ongoing" -> "Онгоинг"
-        "announced" -> "Анонсировано"
-        else -> status ?: "Неизвестно"
+        val raw = description ?: descriptionHtml?.replace(Regex("<.*?>"), "")
+        return raw?.replace(Regex("""\[[^\]]*\]"""), "") // удаляем любые теги в квадратных скобках
+            ?.replace("[", "") // убираем возможные одиночные скобки
+            ?.replace("]", "")
+            ?.trim()
     }
 }
 

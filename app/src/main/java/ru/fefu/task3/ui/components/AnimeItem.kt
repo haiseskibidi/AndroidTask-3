@@ -61,14 +61,14 @@ fun AnimeItem(
                 
                 Column {
                     Text(
-                        text = "${anime.getRussianKind()} • ${anime.getRussianStatus()}",
+                        text = "${anime.kind.toRussianKind()} · ${anime.status.toRussianStatus()}",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.secondary,
                         fontWeight = FontWeight.Medium
                     )
-                    
+
                     Spacer(modifier = Modifier.height(12.dp))
-                    
+
                     Surface(
                         color = MaterialTheme.colorScheme.primaryContainer,
                         shape = RoundedCornerShape(8.dp)
@@ -82,7 +82,7 @@ fun AnimeItem(
                         )
                     }
                 }
-            }
-        }
-    }
-}
+                    }
+                    }
+                    }
+                    }

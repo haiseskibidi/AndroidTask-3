@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import ru.fefu.task3.data.model.AnimeBase
@@ -44,9 +43,12 @@ class AnimeViewModel @Inject constructor(
     private val _retryTrigger = MutableSharedFlow<Unit>(replay = 0)
 
     @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
-    val listUiState: StateFlow<ListUiState> = combine(_searchQuery, _retryTrigger.onStart { emit(Unit) }) { query, _ -> query }
-        .debounce { if (it.isEmpty()) 0L else 500L }
-        .distinctUntilChanged()
+    val listUiState: StateFlow<ListUiState> = combine(
+        _searchQuery
+            .debounce { if (it.isEmpty()) 0L else 500L }
+            .distinctUntilChanged(),
+        _retryTrigger.onStart { emit(Unit) }
+    ) { query, _ -> query }
         .flatMapLatest { query ->
             flow {
                 emit(ListUiState.Loading)
@@ -64,15 +66,31 @@ class AnimeViewModel @Inject constructor(
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ListUiState.Loading)
 
-    private val _detailUiState = MutableStateFlow<DetailUiState>(DetailUiState.Loading)
-    val detailUiState: StateFlow<DetailUiState> = _detailUiState.asStateFlow()
+    private val _detailAnimeId = MutableStateFlow<Long?>(null)
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val detailUiState: StateFlow<DetailUiState> = _detailAnimeId
+        .filterNotNull()
+        .flatMapLatest { id ->
+            flow {
+                emit(DetailUiState.Loading)
+                try {
+                    val details = repository.getAnimeDetails(id)
+                    emitAll(
+                        repository.isFavourite(id).map { isFav ->
+                            DetailUiState.Success(details, isFav)
+                        }
+                    )
+                } catch (e: Exception) {
+                    emit(DetailUiState.Error(e.localizedMessage ?: "Unknown error"))
+                }
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DetailUiState.Loading)
 
     val favouritesList: StateFlow<List<AnimeBase>> = repository.getFavouriteAnimes()
         .map { list -> list.map { it.toAnimeBase() } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    private var detailJob: Job? = null
-    private var favouriteJob: Job? = null
 
     fun onListEvent(event: ListEvent) {
         when (event) {
@@ -88,28 +106,7 @@ class AnimeViewModel @Inject constructor(
     }
 
     fun loadAnimeDetails(id: Long) {
-        detailJob?.cancel()
-        favouriteJob?.cancel()
-        _detailUiState.value = DetailUiState.Loading
-        
-        detailJob = viewModelScope.launch {
-            try {
-                val details = repository.getAnimeDetails(id)
-                favouriteJob = launch {
-                    repository.isFavourite(id).collect { isFav ->
-                        _detailUiState.update { state ->
-                            if (state is DetailUiState.Success) {
-                                state.copy(isFavourite = isFav)
-                            } else {
-                                DetailUiState.Success(details, isFav)
-                            }
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                _detailUiState.value = DetailUiState.Error(e.localizedMessage ?: "Unknown error")
-            }
-        }
+        _detailAnimeId.value = id
     }
 
     fun toggleFavourite(animeDetails: AnimeDetails) {
