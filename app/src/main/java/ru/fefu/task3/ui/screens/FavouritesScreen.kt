@@ -9,7 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import ru.fefu.task3.data.model.AnimeBase
+import ru.fefu.task3.domain.model.AnimeBase
 import ru.fefu.task3.ui.components.AnimeItem
 
 import androidx.compose.ui.res.stringResource

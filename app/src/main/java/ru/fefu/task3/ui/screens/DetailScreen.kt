@@ -20,10 +20,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import ru.fefu.task3.R
-import ru.fefu.task3.data.model.AnimeDetails
+import ru.fefu.task3.domain.model.AnimeDetails
 import ru.fefu.task3.ui.DetailUiState
 import ru.fefu.task3.ui.components.toRussianKind
 import ru.fefu.task3.ui.components.toRussianStatus
+
+import androidx.compose.ui.tooling.preview.Preview
+import ru.fefu.task3.ui.theme.Task3Theme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -88,7 +91,7 @@ fun DetailScreen(
                             .verticalScroll(rememberScrollState())
                     ) {
                         AsyncImage(
-                            model = anime.getImageUrl(),
+                            model = anime.imageUrl,
                             contentDescription = null,
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -148,7 +151,7 @@ fun DetailScreen(
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = anime.getCleanDescription() ?: stringResource(R.string.description_missing),
+                                text = anime.description ?: stringResource(R.string.description_missing),
                                 style = MaterialTheme.typography.bodyMedium,
                                 lineHeight = 22.sp
                             )
@@ -172,6 +175,37 @@ fun DetailScreen(
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun DetailScreenPreview() {
+    Task3Theme {
+        DetailScreen(
+            animeId = 1,
+            uiState = DetailUiState.Success(
+                anime = AnimeDetails(
+                    id = 1,
+                    name = "Naruto",
+                    russian = "Наруто",
+                    imageUrl = null,
+                    score = "8.3",
+                    kind = "tv",
+                    status = "released",
+                    description = "Description of Naruto anime.",
+                    descriptionHtml = null,
+                    episodes = 220,
+                    airedOn = "2002-10-03",
+                    genres = emptyList()
+                ),
+                isFavourite = true
+            ),
+            onLoad = {},
+            onRetryClick = {},
+            onBackClick = {},
+            onToggleFavourite = {}
+        )
     }
 }
 

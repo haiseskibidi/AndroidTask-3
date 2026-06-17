@@ -2,11 +2,14 @@ package ru.fefu.task3.data.repository
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import ru.fefu.task3.data.db.AnimeDao
 import ru.fefu.task3.data.db.AnimeEntity
-import ru.fefu.task3.data.model.AnimeBase
-import ru.fefu.task3.data.model.AnimeDetails
+import ru.fefu.task3.data.toAnimeBase
+import ru.fefu.task3.data.toEntity
+import ru.fefu.task3.domain.model.AnimeBase
+import ru.fefu.task3.domain.model.AnimeDetails
 import ru.fefu.task3.data.network.ShikimoriApi
 import ru.fefu.task3.data.network.dto.toDomain
 import javax.inject.Inject
@@ -28,21 +31,18 @@ class AnimeRepository @Inject constructor(
 
     fun isFavourite(id: Long): Flow<Boolean> = dao.isFavourite(id)
     
-    suspend fun isFavouriteSync(id: Long): Boolean = withContext(Dispatchers.IO) {
-        dao.isFavouriteSync(id)
-    }
-
-    fun getFavouriteAnimes(): Flow<List<AnimeEntity>> = dao.getAllFavourites()
+    fun getFavouriteAnimes(): Flow<List<AnimeBase>> = dao.getAllFavourites()
+        .map { list -> list.map { it.toAnimeBase() } }
     
-    suspend fun addToFavourites(anime: AnimeEntity) = withContext(Dispatchers.IO) {
-        dao.addToFavourites(anime)
+    suspend fun addToFavourites(anime: AnimeDetails) = withContext(Dispatchers.IO) {
+        dao.addToFavourites(anime.toEntity())
     }
     
     suspend fun removeFromFavourites(animeId: Long) = withContext(Dispatchers.IO) {
         dao.removeFromFavourites(animeId)
     }
 
-    suspend fun toggleFavourite(entity: AnimeEntity) = withContext(Dispatchers.IO) {
-        dao.toggleFavourite(entity)
+    suspend fun toggleFavourite(anime: AnimeDetails) = withContext(Dispatchers.IO) {
+        dao.toggleFavourite(anime.toEntity())
     }
 }

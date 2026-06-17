@@ -15,9 +15,6 @@ interface AnimeDao {
     @Query("SELECT EXISTS(SELECT 1 FROM favourites WHERE id = :id)")
     fun isFavourite(id: Long): Flow<Boolean>
 
-    @Query("SELECT EXISTS(SELECT 1 FROM favourites WHERE id = :id)")
-    suspend fun isFavouriteSync(id: Long): Boolean
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun addToFavourites(anime: AnimeEntity)
 
@@ -26,10 +23,14 @@ interface AnimeDao {
 
     @Transaction
     suspend fun toggleFavourite(anime: AnimeEntity) {
-        if (isFavouriteSync(anime.id)) {
+        val exists = isFavouriteSyncInternal(anime.id)
+        if (exists) {
             removeFromFavourites(anime.id)
         } else {
             addToFavourites(anime)
         }
     }
+
+    @Query("SELECT EXISTS(SELECT 1 FROM favourites WHERE id = :id)")
+    suspend fun isFavouriteSyncInternal(id: Long): Boolean
 }

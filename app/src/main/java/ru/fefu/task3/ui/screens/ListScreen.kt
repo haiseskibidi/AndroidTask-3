@@ -25,6 +25,10 @@ import ru.fefu.task3.ui.ListEvent
 import ru.fefu.task3.ui.ListUiState
 import ru.fefu.task3.ui.components.AnimeItem
 
+import androidx.compose.ui.tooling.preview.Preview
+import ru.fefu.task3.domain.model.AnimeBase
+import ru.fefu.task3.ui.theme.Task3Theme
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ListScreen(
@@ -110,5 +114,24 @@ fun ListScreen(
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ListScreenPreview() {
+    Task3Theme {
+        ListScreen(
+            uiState = ListUiState.Success(
+                listOf(
+                    AnimeBase(1, "Naruto", "Наруто", null, "8.3", "tv", "released"),
+                    AnimeBase(2, "One Piece", "Ван Пис", null, "8.6", "tv", "ongoing")
+                )
+            ),
+            searchQuery = "",
+            onEvent = {},
+            onAnimeClick = {},
+            onFavouritesClick = {}
+        )
     }
 }

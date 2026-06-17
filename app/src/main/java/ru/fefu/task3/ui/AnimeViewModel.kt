@@ -7,11 +7,9 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import ru.fefu.task3.data.model.AnimeBase
-import ru.fefu.task3.data.model.AnimeDetails
+import ru.fefu.task3.domain.model.AnimeBase
+import ru.fefu.task3.domain.model.AnimeDetails
 import ru.fefu.task3.data.repository.AnimeRepository
-import ru.fefu.task3.data.toAnimeBase
-import ru.fefu.task3.data.toEntity
 import javax.inject.Inject
 
 sealed class ListUiState {
@@ -89,7 +87,6 @@ class AnimeViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DetailUiState.Loading)
 
     val favouritesList: StateFlow<List<AnimeBase>> = repository.getFavouriteAnimes()
-        .map { list -> list.map { it.toAnimeBase() } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun onListEvent(event: ListEvent) {
@@ -111,7 +108,7 @@ class AnimeViewModel @Inject constructor(
 
     fun toggleFavourite(animeDetails: AnimeDetails) {
         viewModelScope.launch {
-            repository.toggleFavourite(animeDetails.toEntity())
+            repository.toggleFavourite(animeDetails)
         }
     }
 }

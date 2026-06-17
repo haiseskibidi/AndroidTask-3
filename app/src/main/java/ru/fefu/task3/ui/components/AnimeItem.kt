@@ -14,7 +14,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import ru.fefu.task3.data.model.AnimeBase
+import ru.fefu.task3.domain.model.AnimeBase
+
+import androidx.compose.ui.tooling.preview.Preview
+import ru.fefu.task3.ui.theme.Task3Theme
 
 @Composable
 fun AnimeItem(
@@ -35,7 +38,7 @@ fun AnimeItem(
     ) {
         Row(modifier = Modifier.fillMaxSize()) {
             AsyncImage(
-                model = anime.getImageUrl(),
+                model = anime.imageUrl,
                 contentDescription = null,
                 modifier = Modifier
                     .width(130.dp)
@@ -82,7 +85,26 @@ fun AnimeItem(
                         )
                     }
                 }
-                    }
-                    }
-                    }
-                    }
+            }
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun AnimeItemPreview() {
+    Task3Theme {
+        AnimeItem(
+            anime = AnimeBase(
+                id = 1,
+                name = "Cowboy Bebop",
+                russian = "Ковбой Бибоп",
+                imageUrl = "https://shikimori.one/system/animes/original/1.jpg",
+                score = "8.75",
+                kind = "tv",
+                status = "released"
+            ),
+            onClick = {}
+        )
+    }
+}
