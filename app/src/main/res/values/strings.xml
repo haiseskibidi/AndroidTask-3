@@ -1,3 +1,31 @@
 <resources>
-    <string name="app_name">task3</string>
+    <string name="app_name">Shikimori Anime</string>
+    <string name="error_prefix">Ошибка: %s</string>
+    <string name="retry_button">Повторить</string>
+    <string name="no_anime_found">Аниме не найдено.</string>
+    <string name="favourites_empty">В избранном пока пусто.</string>
+    <string name="description_label">Описание</string>
+    <string name="genres_label">Жанры</string>
+    <string name="description_missing">Описание отсутствует.</string>
+    <string name="info_label_rating">Рейтинг</string>
+    <string name="info_label_episodes">Эпизоды</string>
+    <string name="info_label_year">Год</string>
+    <string name="details_title">Информация</string>
+    <string name="favourites_title">Избранное</string>
+    <string name="search_placeholder">Найти аниме...</string>
+
+    <!-- Anime Kinds -->
+    <string name="kind_tv">TV Сериал</string>
+    <string name="kind_movie">Фильм</string>
+    <string name="kind_ova">OVA</string>
+    <string name="kind_ona">ONA</string>
+    <string name="kind_special">Спешл</string>
+    <string name="kind_music">Клип</string>
+    <string name="kind_unknown">Неизвестно</string>
+
+    <!-- Anime Status -->
+    <string name="status_released">Вышло</string>
+    <string name="status_ongoing">Онгоинг</string>
+    <string name="status_announced">Анонсировано</string>
+    <string name="status_unknown">Неизвестно</string>
 </resources>
