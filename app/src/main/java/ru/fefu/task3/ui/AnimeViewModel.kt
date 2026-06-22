@@ -45,17 +45,26 @@ class AnimeViewModel @Inject constructor(
         _searchQuery
             .debounce { if (it.isEmpty()) 0L else 500L }
             .distinctUntilChanged(),
+        // триггер перезапуска используется для повторного вызова сети в случае ошибок
         _retryTrigger.onStart { emit(Unit) }
     ) { query, _ -> query }
         .flatMapLatest { query ->
             flow {
                 emit(ListUiState.Loading)
                 try {
-                    val result = repository.getAnimes(query.ifBlank { null })
-                    if (result.isEmpty()) {
+                    val networkList = repository.getAnimes(query.ifBlank { null })
+                    if (networkList.isEmpty()) {
                         emit(ListUiState.Empty)
                     } else {
-                        emit(ListUiState.Success(result))
+                        emitAll(
+                            repository.getFavouriteAnimes().map { favourites ->
+                                val favIds = favourites.map { it.id }.toSet()
+                                val updatedList = networkList.map { anime ->
+                                    anime.copy(isFavourite = anime.id in favIds)
+                                }
+                                ListUiState.Success(updatedList)
+                            }
+                        )
                     }
                 } catch (e: Exception) {
                     emit(ListUiState.Error(e.localizedMessage ?: "Unknown error"))

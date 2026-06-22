@@ -11,7 +11,8 @@ fun AnimeEntity.toAnimeBase() = AnimeBase(
     imageUrl = imageUrl, // в БД уже лежит абсолютная ссылка
     score = score,
     kind = kind,
-    status = status
+    status = status,
+    isFavourite = true
 )
 
 fun AnimeDetails.toEntity() = AnimeEntity(

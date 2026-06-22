@@ -19,7 +19,8 @@ data class AnimeBase(
     override val imageUrl: String?,
     override val score: String?,
     override val kind: String?,
-    override val status: String?
+    override val status: String?,
+    val isFavourite: Boolean = false
 ) : AnimeModel
 
 data class AnimeDetails(

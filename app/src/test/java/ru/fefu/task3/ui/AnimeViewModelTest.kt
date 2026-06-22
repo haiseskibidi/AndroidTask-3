@@ -4,9 +4,11 @@ import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
@@ -37,6 +39,7 @@ class AnimeViewModelTest {
         repository = mockk(relaxed = true)
         // по умолчанию репозиторий возвращает пустой список
         coEvery { repository.getAnimes(any()) } returns emptyList()
+        every { repository.getFavouriteAnimes() } returns flowOf(emptyList())
         viewModel = AnimeViewModel(repository)
     }
 
@@ -127,10 +130,10 @@ class AnimeViewModelTest {
         coEvery { repository.getAnimes("second") } returns mockAnimes2
 
         viewModel.listUiState.test {
-            // Ждем завершения начальной инициализации
+            // ждем завершения начальной инициализации
             advanceUntilIdle()
             
-            // Очищаем очередь событий Turbine, чтобы сфокусироваться на тесте
+            // очищаем очередь событий Turbine, чтобы сфокусироваться на тесте
             while (true) {
                 val item = expectMostRecentItem()
                 if (item is ListUiState.Empty || item is ListUiState.Success) break
