@@ -13,3 +13,9 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Documents and AI instructions
+*.pdf
+gemini.md
+review.txt
+docs/
