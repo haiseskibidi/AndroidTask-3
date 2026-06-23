@@ -63,6 +63,17 @@ android {
         }
     }
 }
+configurations.all {
+    exclude(group = "androidx.test.espresso", module = "espresso-core")
+    resolutionStrategy {
+        force("androidx.test.espresso:espresso-idling-resource:3.6.1")
+        eachDependency {
+            if (requested.group == "androidx.test.espresso" && requested.name != "espresso-core") {
+                useVersion("3.6.1")
+            }
+        }
+    }
+}
 
 dependencies {
     implementation(libs.androidx.core.ktx)
@@ -101,9 +112,11 @@ dependencies {
 
     // модули для инструментального тестирования
     androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
+    androidTestImplementation("androidx.test.espresso:espresso-idling-resource:3.6.1")
+    androidTestImplementation("androidx.test:runner:1.6.1")
+    androidTestImplementation("androidx.test:rules:1.6.1")
     androidTestImplementation(libs.mockk.android)
     androidTestImplementation(libs.hilt.android.testing)
     kspAndroidTest(libs.hilt.compiler)
