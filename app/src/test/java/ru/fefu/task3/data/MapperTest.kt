@@ -15,6 +15,7 @@ class MapperTest {
     fun `entity to domain mapping should be correct`() {
         val entity = AnimeEntity(
             id = 1,
+            userId = 1L,
             name = "Test",
             russian = "Тест",
             imageUrl = "https://example.com/img.jpg",
@@ -48,9 +49,10 @@ class MapperTest {
             genres = emptyList()
         )
 
-        val entity = domain.toEntity()
+        val entity = domain.toEntity(1L)
 
         assertThat(entity.id).isEqualTo(domain.id)
+        assertThat(entity.userId).isEqualTo(1L)
         assertThat(entity.name).isEqualTo(domain.name)
         assertThat(entity.imageUrl).isEqualTo(domain.imageUrl)
     }

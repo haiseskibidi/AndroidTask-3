@@ -17,89 +17,125 @@ import coil.compose.AsyncImage
 import ru.fefu.task3.domain.model.AnimeBase
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Star
+
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.graphics.Color
 
 import androidx.compose.ui.tooling.preview.Preview
 import ru.fefu.task3.ui.theme.Task3Theme
+import ru.fefu.task3.ui.theme.BurgundyPrimary
+import ru.fefu.task3.ui.theme.spacing
 
 @Composable
 fun AnimeItem(
     anime: AnimeBase,
     onClick: () -> Unit
 ) {
-    ElevatedCard(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .height(180.dp)
-            .clickable { onClick() },
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            .padding(MaterialTheme.spacing.spacing6)
+            .clickable { onClick() }
     ) {
-        Row(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(MaterialTheme.spacing.cardHeight)
+        ) {
             AsyncImage(
                 model = anime.imageUrl,
                 contentDescription = null,
                 modifier = Modifier
-                    .width(130.dp)
-                    .fillMaxHeight(),
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(MaterialTheme.spacing.spacing6)),
                 contentScale = ContentScale.Crop
             )
-            
-            Column(
+
+            // rating badge in top-left (mangalib style, overlapping)
+            Surface(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.SpaceBetween
+                    .align(Alignment.TopStart)
+                    .offset(
+                        x = -MaterialTheme.spacing.extraSmall,
+                        y = -MaterialTheme.spacing.extraSmall
+                    ),
+                shape = RoundedCornerShape(MaterialTheme.spacing.extraSmall),
+                color = BurgundyPrimary,
+                shadowElevation = MaterialTheme.spacing.spacing2
             ) {
                 Text(
-                    text = anime.getDisplayName(),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.ExtraBold,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    lineHeight = 26.sp
+                    text = anime.score ?: "0.0",
+                    modifier = Modifier.padding(
+                        horizontal = MaterialTheme.spacing.spacing6,
+                        vertical = MaterialTheme.spacing.spacing2 // ponytail: using spacing2 for vertical padding as approximation of 3.dp
+                    ),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
                 )
-                
-                Column {
-                    Text(
-                        text = "${anime.kind.toRussianKind()} · ${anime.status.toRussianStatus()}",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.secondary,
-                        fontWeight = FontWeight.Medium
+            }
+        }
+
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.spacing6))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top
+        ) {
+            Text(
+                text = anime.getDisplayName(),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onSurface,
+                lineHeight = 18.sp,
+                modifier = Modifier.weight(1f)
+            )
+
+            if (anime.isFavourite) {
+                Spacer(modifier = Modifier.width(MaterialTheme.spacing.small))
+                Icon(
+                    imageVector = Icons.Default.Favorite,
+                    contentDescription = null,
+                    tint = BurgundyPrimary,
+                    modifier = Modifier
+                        .size(MaterialTheme.spacing.medium)
+                        .padding(top = MaterialTheme.spacing.spacing2)
+                )
+            }
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = anime.kind.toRussianKind(),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+            if (anime.userRating != null) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = null,
+                        tint = Color(0xFFFFC107),
+                        modifier = Modifier.size(MaterialTheme.spacing.starSizeSmall)
                     )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Surface(
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text(
-                                text = "★ ${anime.score ?: "0.0"}",
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Black,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-
-                        if (anime.isFavourite) {
-                            Icon(
-                                imageVector = Icons.Default.Favorite,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                    }
+                    Spacer(modifier = Modifier.width(MaterialTheme.spacing.spacing2))
+                    Text(
+                        text = String.format("%.0f", anime.userRating),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFFFC107)
+                    )
                 }
             }
         }

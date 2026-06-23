@@ -31,7 +31,9 @@ class ListScreenTest {
                     searchQuery = "",
                     onEvent = {},
                     onAnimeClick = {},
-                    onFavouritesClick = {}
+                    onFavouritesClick = {},
+                    onRecentClick = {},
+                    onSettingsClick = {}
                 )
             }
         }
@@ -50,7 +52,9 @@ class ListScreenTest {
                     searchQuery = "",
                     onEvent = {},
                     onAnimeClick = {},
-                    onFavouritesClick = {}
+                    onFavouritesClick = {},
+                    onRecentClick = {},
+                    onSettingsClick = {}
                 )
             }
         }
@@ -73,7 +77,9 @@ class ListScreenTest {
                     searchQuery = "",
                     onEvent = {},
                     onAnimeClick = { clickedId = it },
-                    onFavouritesClick = {}
+                    onFavouritesClick = {},
+                    onRecentClick = {},
+                    onSettingsClick = {}
                 )
             }
         }

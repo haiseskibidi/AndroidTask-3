@@ -5,8 +5,8 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 
 @Entity(
-    tableName = "favourites",
-    primaryKeys = ["userId", "id"],
+    tableName = "recent_anime",
+    primaryKeys = ["userId", "animeId"],
     foreignKeys = [
         ForeignKey(
             entity = UserEntity::class,
@@ -17,13 +17,8 @@ import androidx.room.Index
     ],
     indices = [Index(value = ["userId"])]
 )
-data class AnimeEntity(
-    val id: Long,
+data class RecentAnimeEntity(
     val userId: Long,
-    val name: String,
-    val russian: String?,
-    val imageUrl: String?,
-    val score: String?,
-    val kind: String?,
-    val status: String?
+    val animeId: Long,
+    val viewedAt: Long
 )

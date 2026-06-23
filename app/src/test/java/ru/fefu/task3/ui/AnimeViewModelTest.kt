@@ -17,7 +17,8 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import ru.fefu.task3.data.repository.AnimeRepository
+import ru.fefu.task3.domain.model.AnimeRepository
+import ru.fefu.task3.data.settings.UserSettings
 import ru.fefu.task3.domain.model.AnimeBase
 import ru.fefu.task3.util.MainDispatcherRule
 
@@ -32,15 +33,22 @@ class AnimeViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private lateinit var repository: AnimeRepository
+    private lateinit var userSettings: UserSettings
     private lateinit var viewModel: AnimeViewModel
 
     @Before
     fun setUp() {
         repository = mockk(relaxed = true)
+        userSettings = mockk(relaxed = true)
         // по умолчанию репозиторий возвращает пустой список
         coEvery { repository.getAnimes(any()) } returns emptyList()
-        every { repository.getFavouriteAnimes() } returns flowOf(emptyList())
-        viewModel = AnimeViewModel(repository)
+        every { repository.getFavouriteAnimes(any()) } returns flowOf(emptyList())
+        every { repository.getRecentAnimeDetails(any()) } returns flowOf(emptyList())
+        every { repository.getAllNotes(any()) } returns flowOf(emptyList())
+        every { repository.getAllUsers() } returns flowOf(listOf(ru.fefu.task3.domain.model.User(id = 1L, name = "Test User")))
+        every { userSettings.activeUserId } returns flowOf(1L)
+        every { userSettings.isDarkTheme } returns flowOf(false)
+        viewModel = AnimeViewModel(repository, userSettings)
     }
 
     @Test
@@ -164,5 +172,26 @@ class AnimeViewModelTest {
             // Success от первого ("first") не должен прийти
             expectNoEvents()
         }
+    }
+
+    @Test
+    fun `selectUser should update activeUserId flow`() = runTest {
+        advanceUntilIdle()
+        viewModel.selectUser(42L)
+        coVerify { userSettings.setActiveUserId(42L) }
+    }
+
+    @Test
+    fun `toggleTheme should update isDarkTheme flow`() = runTest {
+        advanceUntilIdle()
+        viewModel.toggleTheme(true)
+        coVerify { userSettings.setDarkTheme(true) }
+    }
+
+    @Test
+    fun `clearHistory should trigger repository clean history`() = runTest {
+        advanceUntilIdle()
+        viewModel.clearHistory()
+        coVerify { repository.clearHistory(1L) }
     }
 }

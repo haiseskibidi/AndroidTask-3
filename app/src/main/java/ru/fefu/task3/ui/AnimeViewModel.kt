@@ -9,46 +9,79 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import ru.fefu.task3.domain.model.AnimeBase
 import ru.fefu.task3.domain.model.AnimeDetails
-import ru.fefu.task3.data.repository.AnimeRepository
+import ru.fefu.task3.domain.model.AnimeRepository
+import ru.fefu.task3.domain.model.User
+import ru.fefu.task3.domain.model.AnimeNote
+import ru.fefu.task3.data.settings.UserSettings
 import javax.inject.Inject
 
-sealed class ListUiState {
-    object Loading : ListUiState()
-    data class Success(val animes: List<AnimeBase>) : ListUiState()
-    data class Error(val message: String) : ListUiState()
-    object Empty : ListUiState()
-}
-
-sealed class DetailUiState {
-    object Loading : DetailUiState()
-    data class Success(val anime: AnimeDetails, val isFavourite: Boolean) : DetailUiState()
-    data class Error(val message: String) : DetailUiState()
-}
-
-sealed interface ListEvent {
-    data class SearchQueryChanged(val query: String) : ListEvent
-    object Retry : ListEvent
-}
 
 @HiltViewModel
 class AnimeViewModel @Inject constructor(
-    private val repository: AnimeRepository
+    private val repository: AnimeRepository,
+    private val userSettings: UserSettings
 ) : ViewModel() {
+
+    val activeUserId: StateFlow<Long?> = userSettings.activeUserId
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    val isDarkTheme: StateFlow<Boolean?> = userSettings.isDarkTheme
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    val allUsers: StateFlow<List<User>> = repository.getAllUsers()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val favouritesList: StateFlow<List<AnimeBase>> = activeUserId
+        .filterNotNull()
+        .flatMapLatest { userId ->
+            combine(
+                repository.getFavouriteAnimes(userId),
+                repository.getAllNotes(userId)
+            ) { favourites, notes ->
+                val notesMap = notes.associateBy { it.animeId }
+                favourites.map { it.copy(userRating = notesMap[it.id]?.rating) }
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val recentAnimes: StateFlow<List<AnimeBase>> = activeUserId
+        .filterNotNull()
+        .flatMapLatest { userId ->
+            combine(
+                repository.getRecentAnimeDetails(userId),
+                repository.getFavouriteAnimes(userId),
+                repository.getAllNotes(userId)
+            ) { recent, favourites, notes ->
+                val favIds = favourites.map { it.id }.toSet()
+                val notesMap = notes.associateBy { it.animeId }
+                recent.map { it.copy(isFavourite = it.id in favIds, userRating = notesMap[it.id]?.rating) }
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
     private val _retryTrigger = MutableSharedFlow<Unit>(replay = 0)
 
+    init {
+        viewModelScope.launch {
+            val activeId = userSettings.activeUserId.first()
+            if (activeId == null || repository.getUserById(activeId) == null) {
+                userSettings.setActiveUserId(repository.getOrCreateDefaultUser())
+            }
+        }
+    }
+
     @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
     val listUiState: StateFlow<ListUiState> = combine(
-        _searchQuery
-            .debounce { if (it.isEmpty()) 0L else 500L }
-            .distinctUntilChanged(),
-        // триггер перезапуска используется для повторного вызова сети в случае ошибок
-        _retryTrigger.onStart { emit(Unit) }
-    ) { query, _ -> query }
-        .flatMapLatest { query ->
+        _searchQuery.debounce { if (it.isEmpty()) 0L else 500L }.distinctUntilChanged(),
+        _retryTrigger.onStart { emit(Unit) },
+        activeUserId.filterNotNull()
+    ) { query, _, userId -> Pair(query, userId) }
+        .flatMapLatest { (query, userId) ->
             flow {
                 emit(ListUiState.Loading)
                 try {
@@ -57,12 +90,16 @@ class AnimeViewModel @Inject constructor(
                         emit(ListUiState.Empty)
                     } else {
                         emitAll(
-                            repository.getFavouriteAnimes().map { favourites ->
+                            combine(
+                                repository.getFavouriteAnimes(userId),
+                                repository.getAllNotes(userId)
+                            ) { favourites, notes ->
                                 val favIds = favourites.map { it.id }.toSet()
-                                val updatedList = networkList.map { anime ->
-                                    anime.copy(isFavourite = anime.id in favIds)
+                                val notesMap = notes.associateBy { it.animeId }
+                                val updated = networkList.map {
+                                    it.copy(isFavourite = it.id in favIds, userRating = notesMap[it.id]?.rating)
                                 }
-                                ListUiState.Success(updatedList)
+                                ListUiState.Success(updated)
                             }
                         )
                     }
@@ -76,48 +113,86 @@ class AnimeViewModel @Inject constructor(
     private val _detailAnimeId = MutableStateFlow<Long?>(null)
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val detailUiState: StateFlow<DetailUiState> = _detailAnimeId
-        .filterNotNull()
-        .flatMapLatest { id ->
+    val detailUiState: StateFlow<DetailUiState> = combine(
+        _detailAnimeId,
+        activeUserId.filterNotNull()
+    ) { animeId, userId -> Pair(animeId, userId) }
+        .flatMapLatest { (animeId, userId) ->
             flow {
                 emit(DetailUiState.Loading)
-                try {
-                    val details = repository.getAnimeDetails(id)
-                    emitAll(
-                        repository.isFavourite(id).map { isFav ->
-                            DetailUiState.Success(details, isFav)
-                        }
-                    )
-                } catch (e: Exception) {
-                    emit(DetailUiState.Error(e.localizedMessage ?: "Unknown error"))
+                if (animeId != null) {
+                    try {
+                        val details = repository.getAnimeDetails(animeId)
+                        repository.addToRecent(userId, animeId)
+                        emitAll(
+                            repository.isFavourite(userId, animeId).map { isFav ->
+                                DetailUiState.Success(details, isFav)
+                            }
+                        )
+                    } catch (e: Exception) {
+                        emit(DetailUiState.Error(e.localizedMessage ?: "Unknown error"))
+                    }
                 }
             }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DetailUiState.Loading)
 
-    val favouritesList: StateFlow<List<AnimeBase>> = repository.getFavouriteAnimes()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
     fun onListEvent(event: ListEvent) {
         when (event) {
-            is ListEvent.SearchQueryChanged -> {
-                _searchQuery.value = event.query
-            }
-            ListEvent.Retry -> {
-                viewModelScope.launch {
-                    _retryTrigger.emit(Unit)
-                }
-            }
+            is ListEvent.SearchQueryChanged -> _searchQuery.value = event.query
+            ListEvent.Retry -> viewModelScope.launch { _retryTrigger.emit(Unit) }
         }
     }
 
     fun loadAnimeDetails(id: Long) {
-        _detailAnimeId.value = id
+        if (_detailAnimeId.value != id) {
+            _detailAnimeId.value = null
+            viewModelScope.launch { _detailAnimeId.value = id }
+        }
     }
 
     fun toggleFavourite(animeDetails: AnimeDetails) {
-        viewModelScope.launch {
-            repository.toggleFavourite(animeDetails)
+        activeUserId.value?.let { userId ->
+            viewModelScope.launch { repository.toggleFavourite(userId, animeDetails) }
         }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun getNoteForAnime(animeId: Long): Flow<AnimeNote?> = activeUserId
+        .flatMapLatest { userId ->
+            if (userId == null) flowOf(null)
+            else repository.getNote(userId, animeId)
+        }
+
+    fun saveNote(animeId: Long, text: String, rating: Float?) {
+        activeUserId.value?.let { userId ->
+            viewModelScope.launch {
+                repository.saveNote(AnimeNote(userId = userId, animeId = animeId, noteText = text, rating = rating, updatedAt = System.currentTimeMillis()))
+            }
+        }
+    }
+
+    fun deleteNote(animeId: Long) {
+        activeUserId.value?.let { viewModelScope.launch { repository.deleteNote(it, animeId) } }
+    }
+
+    fun createUser(name: String) {
+        viewModelScope.launch { repository.insertUser(User(name = name)) }
+    }
+
+    fun selectUser(userId: Long) {
+        viewModelScope.launch { userSettings.setActiveUserId(userId) }
+    }
+
+    fun deleteUser(userId: Long) {
+        viewModelScope.launch { repository.deleteUser(userId) }
+    }
+
+    fun toggleTheme(enabled: Boolean) {
+        viewModelScope.launch { userSettings.setDarkTheme(enabled) }
+    }
+
+    fun clearHistory() {
+        activeUserId.value?.let { viewModelScope.launch { repository.clearHistory(it) } }
     }
 }

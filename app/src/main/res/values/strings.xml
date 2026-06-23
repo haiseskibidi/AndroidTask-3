@@ -28,4 +28,36 @@
     <string name="status_ongoing">Онгоинг</string>
     <string name="status_announced">Анонсировано</string>
     <string name="status_unknown">Неизвестно</string>
+
+    <!-- Notes / Ratings -->
+    <string name="my_note">Моя заметка</string>
+    <string name="my_rating_label">Моя оценка: </string>
+    <string name="note_placeholder">Напишите личные впечатления об аниме...</string>
+    <string name="save_button">Сохранить</string>
+    <string name="note_saved_toast">Заметка сохранена</string>
+
+    <!-- History -->
+    <string name="history_title">История просмотров</string>
+    <string name="history_empty">История пуста</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Настройки</string>
+    <string name="settings_design_label">Оформление</string>
+    <string name="settings_dark_theme">Темная тема</string>
+    <string name="settings_users_title">Профили пользователей</string>
+    <string name="settings_delete_profile">Удалить профиль</string>
+    <string name="settings_clear_history">Очистить историю просмотров</string>
+    <string name="settings_new_profile_title">Новый профиль</string>
+    <string name="settings_username_label">Имя пользователя</string>
+    <string name="settings_create_button">Создать</string>
+    <string name="settings_cancel_button">Отмена</string>
+    <string name="settings_delete_profile_confirm_title">Удалить профиль?</string>
+    <string name="settings_delete_profile_confirm_desc">Вы действительно хотите удалить профиль \"%1$s\" и все его данные (избранное, историю, заметки)?</string>
+    <string name="settings_delete_confirm_action">Удалить</string>
+
+    <!-- Sorting -->
+    <string name="sort_label">Сортировка:</string>
+    <string name="sort_default">По умолчанию</string>
+    <string name="sort_by_rating">По моей оценке</string>
+    <string name="sort_by_name">По названию</string>
 </resources>

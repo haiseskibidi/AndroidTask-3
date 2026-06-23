@@ -4,6 +4,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -11,6 +14,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -24,6 +29,7 @@ import ru.fefu.task3.R
 import ru.fefu.task3.ui.ListEvent
 import ru.fefu.task3.ui.ListUiState
 import ru.fefu.task3.ui.components.AnimeItem
+import ru.fefu.task3.ui.theme.spacing
 
 import androidx.compose.ui.tooling.preview.Preview
 import ru.fefu.task3.domain.model.AnimeBase
@@ -36,7 +42,9 @@ fun ListScreen(
     searchQuery: String,
     onEvent: (ListEvent) -> Unit,
     onAnimeClick: (Long) -> Unit,
-    onFavouritesClick: () -> Unit
+    onFavouritesClick: () -> Unit,
+    onRecentClick: () -> Unit,
+    onSettingsClick: () -> Unit
 ) {
     val focusManager = LocalFocusManager.current
 
@@ -45,8 +53,26 @@ fun ListScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.app_name)) },
                 actions = {
+                    IconButton(onClick = onRecentClick) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.List,
+                            contentDescription = stringResource(R.string.history_title),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
                     IconButton(onClick = onFavouritesClick) {
-                        Icon(Icons.Default.Favorite, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Icon(
+                            Icons.Default.Favorite,
+                            contentDescription = stringResource(R.string.favourites_title),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    IconButton(onClick = onSettingsClick) {
+                        Icon(
+                            Icons.Default.Settings,
+                            contentDescription = stringResource(R.string.settings_title),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
                     }
                 }
             )
@@ -58,7 +84,7 @@ fun ListScreen(
                 onValueChange = { onEvent(ListEvent.SearchQueryChanged(it)) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(12.dp),
+                    .padding(MaterialTheme.spacing.spacing12),
                 placeholder = { Text(stringResource(R.string.search_placeholder)) },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 trailingIcon = {
@@ -71,7 +97,7 @@ fun ListScreen(
                     }
                 },
                 singleLine = true,
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(MaterialTheme.spacing.spacing12),
                 keyboardOptions = KeyboardOptions(
                     imeAction = ImeAction.Search,
                     keyboardType = KeyboardType.Text,
@@ -106,8 +132,12 @@ fun ListScreen(
                     }
                 }
                 is ListUiState.Success -> {
-                    LazyColumn {
-                        items(state.animes) { anime ->
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
+                        contentPadding = PaddingValues(MaterialTheme.spacing.spacing6),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        items(state.animes, key = { it.id }) { anime ->
                             AnimeItem(anime = anime, onClick = { onAnimeClick(anime.id) })
                         }
                     }
@@ -131,7 +161,9 @@ fun ListScreenPreview() {
             searchQuery = "",
             onEvent = {},
             onAnimeClick = {},
-            onFavouritesClick = {}
+            onFavouritesClick = {},
+            onRecentClick = {},
+            onSettingsClick = {}
         )
     }
 }

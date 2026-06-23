@@ -1,6 +1,8 @@
 package ru.fefu.task3.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -11,6 +13,10 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -24,19 +30,22 @@ import ru.fefu.task3.domain.model.AnimeDetails
 import ru.fefu.task3.ui.DetailUiState
 import ru.fefu.task3.ui.components.toRussianKind
 import ru.fefu.task3.ui.components.toRussianStatus
+import ru.fefu.task3.domain.model.AnimeNote
 
 import androidx.compose.ui.tooling.preview.Preview
-import ru.fefu.task3.ui.theme.Task3Theme
+import ru.fefu.task3.ui.theme.spacing
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailScreen(
     animeId: Long,
     uiState: DetailUiState,
+    note: AnimeNote?,
     onLoad: (Long) -> Unit,
     onRetryClick: () -> Unit,
     onBackClick: () -> Unit,
-    onToggleFavourite: (AnimeDetails) -> Unit
+    onToggleFavourite: (AnimeDetails) -> Unit,
+    onSaveNote: (String, Float?) -> Unit
 ) {
     LaunchedEffect(animeId) {
         onLoad(animeId)
@@ -95,10 +104,10 @@ fun DetailScreen(
                             contentDescription = null,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(350.dp),
+                                .height(MaterialTheme.spacing.detailsImageHeight),
                             contentScale = ContentScale.Crop
                         )
-                        Column(modifier = Modifier.padding(20.dp)) {
+                        Column(modifier = Modifier.padding(MaterialTheme.spacing.spacing20)) {
                             Text(
                                 text = anime.getDisplayName(),
                                 style = MaterialTheme.typography.headlineMedium,
@@ -106,33 +115,33 @@ fun DetailScreen(
                             )
                             
                             Row(
-                                modifier = Modifier.padding(vertical = 8.dp),
+                                modifier = Modifier.padding(vertical = MaterialTheme.spacing.small),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Surface(
                                     color = MaterialTheme.colorScheme.secondaryContainer,
-                                    shape = RoundedCornerShape(8.dp)
+                                    shape = RoundedCornerShape(MaterialTheme.spacing.small)
                                 ) {
                                     Text(
                                         text = anime.kind.toRussianKind(),
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                        modifier = Modifier.padding(horizontal = MaterialTheme.spacing.small, vertical = MaterialTheme.spacing.extraSmall),
                                         style = MaterialTheme.typography.labelLarge
                                     )
                                 }
-                                Spacer(modifier = Modifier.width(8.dp))
+                                Spacer(modifier = Modifier.width(MaterialTheme.spacing.small))
                                 Surface(
                                     color = MaterialTheme.colorScheme.tertiaryContainer,
-                                    shape = RoundedCornerShape(8.dp)
+                                    shape = RoundedCornerShape(MaterialTheme.spacing.small)
                                 ) {
                                     Text(
                                         text = anime.status.toRussianStatus(),
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                        modifier = Modifier.padding(horizontal = MaterialTheme.spacing.small, vertical = MaterialTheme.spacing.extraSmall),
                                         style = MaterialTheme.typography.labelLarge
                                     )
                                 }
                             }
 
-                            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                            HorizontalDivider(modifier = Modifier.padding(vertical = MaterialTheme.spacing.small))
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -143,21 +152,27 @@ fun DetailScreen(
                                 InfoColumn(stringResource(R.string.info_label_year), anime.airedOn?.take(4) ?: "?")
                             }
 
-                            Spacer(modifier = Modifier.height(24.dp))
+                            Spacer(modifier = Modifier.height(MaterialTheme.spacing.large))
                             Text(
                                 stringResource(R.string.description_label),
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
                             Text(
                                 text = anime.description ?: stringResource(R.string.description_missing),
                                 style = MaterialTheme.typography.bodyMedium,
                                 lineHeight = 22.sp
                             )
+
+                            Spacer(modifier = Modifier.height(MaterialTheme.spacing.large))
+                            NoteSection(
+                                note = note,
+                                onSaveNote = onSaveNote
+                            )
                             
                             if (!anime.genres.isNullOrEmpty()) {
-                                Spacer(modifier = Modifier.height(24.dp))
+                                Spacer(modifier = Modifier.height(MaterialTheme.spacing.large))
                                 Text(
                                     stringResource(R.string.genres_label),
                                     style = MaterialTheme.typography.titleLarge,
@@ -166,8 +181,9 @@ fun DetailScreen(
                                 Text(
                                     text = anime.genres.joinToString { it.russian ?: it.name },
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.padding(top = 8.dp)
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
+                                    modifier = Modifier.padding(top = MaterialTheme.spacing.small),
+                                    lineHeight = 22.sp
                                 )
                             }
                         }
@@ -178,41 +194,3 @@ fun DetailScreen(
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun DetailScreenPreview() {
-    Task3Theme {
-        DetailScreen(
-            animeId = 1,
-            uiState = DetailUiState.Success(
-                anime = AnimeDetails(
-                    id = 1,
-                    name = "Naruto",
-                    russian = "Наруто",
-                    imageUrl = null,
-                    score = "8.3",
-                    kind = "tv",
-                    status = "released",
-                    description = "Description of Naruto anime.",
-                    descriptionHtml = null,
-                    episodes = 220,
-                    airedOn = "2002-10-03",
-                    genres = emptyList()
-                ),
-                isFavourite = true
-            ),
-            onLoad = {},
-            onRetryClick = {},
-            onBackClick = {},
-            onToggleFavourite = {}
-        )
-    }
-}
-
-@Composable
-fun InfoColumn(label: String, value: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-    }
-}

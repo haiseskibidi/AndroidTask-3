@@ -14,7 +14,9 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import ru.fefu.task3.data.db.AnimeDao
 import ru.fefu.task3.data.db.AppDatabase
+import ru.fefu.task3.domain.model.User
 import ru.fefu.task3.data.network.ShikimoriApi
+import ru.fefu.task3.domain.model.AnimeRepository
 import ru.fefu.task3.domain.model.AnimeDetails
 
 /**
@@ -28,13 +30,16 @@ class RepositoryIntegrationTest {
     private lateinit var dao: AnimeDao
     private lateinit var repository: AnimeRepository
     private val api: ShikimoriApi = mockk()
+    private val userId = 1L
 
     @Before
-    fun setup() {
+    fun setup() = runTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).build()
         dao = db.animeDao()
-        repository = AnimeRepository(api, dao)
+        repository = AnimeRepositoryImpl(api, dao)
+        // вставляем пользователя
+        repository.insertUser(User(id = userId, name = "Test User"))
     }
 
     @After
@@ -60,10 +65,10 @@ class RepositoryIntegrationTest {
         )
 
         // выполняем сохранение через репозиторий
-        repository.toggleFavourite(anime)
+        repository.toggleFavourite(userId, anime)
 
         // проверяем, что данные появились в БД
-        val favourites = repository.getFavouriteAnimes().first()
+        val favourites = repository.getFavouriteAnimes(userId).first()
         assertThat(favourites).hasSize(1)
         assertThat(favourites.first().id).isEqualTo(123)
         assertThat(favourites.first().name).isEqualTo("Test")
@@ -87,11 +92,11 @@ class RepositoryIntegrationTest {
         )
 
         // добавляем
-        repository.toggleFavourite(anime)
+        repository.toggleFavourite(userId, anime)
         // удаляем (повторный клик)
-        repository.toggleFavourite(anime)
+        repository.toggleFavourite(userId, anime)
 
-        val favourites = repository.getFavouriteAnimes().first()
+        val favourites = repository.getFavouriteAnimes(userId).first()
         assertThat(favourites).isEmpty()
     }
 }

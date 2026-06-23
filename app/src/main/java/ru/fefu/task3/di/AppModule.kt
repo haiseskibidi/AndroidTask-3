@@ -14,7 +14,8 @@ import retrofit2.converter.gson.GsonConverterFactory
 import ru.fefu.task3.data.db.AnimeDao
 import ru.fefu.task3.data.db.AppDatabase
 import ru.fefu.task3.data.network.ShikimoriApi
-import ru.fefu.task3.data.repository.AnimeRepository
+import ru.fefu.task3.data.repository.AnimeRepositoryImpl
+import ru.fefu.task3.domain.model.AnimeRepository
 import ru.fefu.task3.BuildConfig
 import javax.inject.Singleton
 
@@ -59,7 +60,9 @@ object AppModule {
             context,
             AppDatabase::class.java,
             "shikimori_db"
-        ).build()
+        )
+        .fallbackToDestructiveMigration()
+        .build()
     }
 
     @Provides
@@ -70,6 +73,6 @@ object AppModule {
     @Provides
     @Singleton
     fun provideAnimeRepository(api: ShikimoriApi, dao: AnimeDao): AnimeRepository {
-        return AnimeRepository(api, dao)
+        return AnimeRepositoryImpl(api, dao)
     }
 }
