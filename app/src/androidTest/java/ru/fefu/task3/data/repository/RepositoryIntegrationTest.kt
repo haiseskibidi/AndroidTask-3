@@ -5,7 +5,6 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
-import io.mockk.mockk
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -27,7 +26,20 @@ class RepositoryIntegrationTest {
     private lateinit var db: AppDatabase
     private lateinit var dao: AnimeDao
     private lateinit var repository: AnimeRepository
-    private val api: ShikimoriApi = mockk()
+    private val api = object : ShikimoriApi {
+        override suspend fun getAnimes(
+            page: Int,
+            limit: Int,
+            search: String?,
+            order: String
+        ): List<ru.fefu.task3.data.network.dto.AnimeDto> = emptyList()
+
+        override suspend fun getAnimeDetails(
+            id: Long
+        ): ru.fefu.task3.data.network.dto.AnimeDetailsDto {
+            throw NotImplementedError()
+        }
+    }
 
     @Before
     fun setup() {
