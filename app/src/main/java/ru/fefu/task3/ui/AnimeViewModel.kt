@@ -65,6 +65,10 @@ class AnimeViewModel @Inject constructor(
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
     private val _retryTrigger = MutableSharedFlow<Unit>(replay = 0)
+    private val _detailRetryTrigger = MutableSharedFlow<Unit>(replay = 0)
+
+    private val _errorEvents = MutableSharedFlow<String>(replay = 0)
+    val errorEvents = _errorEvents.asSharedFlow()
 
     init {
         viewModelScope.launch {
@@ -115,8 +119,9 @@ class AnimeViewModel @Inject constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     val detailUiState: StateFlow<DetailUiState> = combine(
         _detailAnimeId,
+        _detailRetryTrigger.onStart { emit(Unit) },
         activeUserId.filterNotNull()
-    ) { animeId, userId -> Pair(animeId, userId) }
+    ) { animeId, _, userId -> Pair(animeId, userId) }
         .flatMapLatest { (animeId, userId) ->
             flow {
                 emit(DetailUiState.Loading)
@@ -145,16 +150,25 @@ class AnimeViewModel @Inject constructor(
     }
 
     fun loadAnimeDetails(id: Long) {
-        if (_detailAnimeId.value != id) {
-            _detailAnimeId.value = null
-            viewModelScope.launch { _detailAnimeId.value = id }
+        _detailAnimeId.value = id
+    }
+
+    fun retryDetail() {
+        viewModelScope.launch { _detailRetryTrigger.emit(Unit) }
+    }
+
+    private fun launchWithDbError(action: suspend () -> Unit, errorMessage: String) {
+        viewModelScope.launch {
+            try {
+                action()
+            } catch (e: Exception) {
+                _errorEvents.emit("$errorMessage: ${e.localizedMessage ?: "unknown error"}")
+            }
         }
     }
 
-    fun toggleFavourite(animeDetails: AnimeDetails) {
-        activeUserId.value?.let { userId ->
-            viewModelScope.launch { repository.toggleFavourite(userId, animeDetails) }
-        }
+    fun toggleFavourite(animeDetails: AnimeDetails) = activeUserId.value?.let { userId ->
+        launchWithDbError({ repository.toggleFavourite(userId, animeDetails) }, "Ошибка БД")
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -164,35 +178,25 @@ class AnimeViewModel @Inject constructor(
             else repository.getNote(userId, animeId)
         }
 
-    fun saveNote(animeId: Long, text: String, rating: Float?) {
-        activeUserId.value?.let { userId ->
-            viewModelScope.launch {
-                repository.saveNote(AnimeNote(userId = userId, animeId = animeId, noteText = text, rating = rating, updatedAt = System.currentTimeMillis()))
-            }
-        }
+    fun saveNote(animeId: Long, text: String, rating: Float?) = activeUserId.value?.let { userId ->
+        launchWithDbError({
+            repository.saveNote(AnimeNote(userId = userId, animeId = animeId, noteText = text, rating = rating, updatedAt = System.currentTimeMillis()))
+        }, "Не удалось сохранить заметку")
     }
 
-    fun deleteNote(animeId: Long) {
-        activeUserId.value?.let { viewModelScope.launch { repository.deleteNote(it, animeId) } }
+    fun deleteNote(animeId: Long) = activeUserId.value?.let { userId ->
+        launchWithDbError({ repository.deleteNote(userId, animeId) }, "Не удалось удалить заметку")
     }
 
-    fun createUser(name: String) {
-        viewModelScope.launch { repository.insertUser(User(name = name)) }
-    }
+    fun createUser(name: String) = launchWithDbError({ repository.insertUser(User(name = name)) }, "Не удалось создать профиль")
 
-    fun selectUser(userId: Long) {
-        viewModelScope.launch { userSettings.setActiveUserId(userId) }
-    }
+    fun selectUser(userId: Long) = launchWithDbError({ userSettings.setActiveUserId(userId) }, "Не удалось переключить профиль")
 
-    fun deleteUser(userId: Long) {
-        viewModelScope.launch { repository.deleteUser(userId) }
-    }
+    fun deleteUser(userId: Long) = launchWithDbError({ repository.deleteUser(userId) }, "Не удалось удалить профиль")
 
-    fun toggleTheme(enabled: Boolean) {
-        viewModelScope.launch { userSettings.setDarkTheme(enabled) }
-    }
+    fun toggleTheme(enabled: Boolean) = launchWithDbError({ userSettings.setDarkTheme(enabled) }, "Не удалось изменить тему")
 
-    fun clearHistory() {
-        activeUserId.value?.let { viewModelScope.launch { repository.clearHistory(it) } }
+    fun clearHistory() = activeUserId.value?.let { userId ->
+        launchWithDbError({ repository.clearHistory(userId) }, "Не удалось очистить историю")
     }
 }

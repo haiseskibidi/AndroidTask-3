@@ -65,7 +65,7 @@ fun AnimeItem(
                 shadowElevation = MaterialTheme.spacing.spacing2
             ) {
                 Text(
-                    text = anime.score ?: "0.0",
+                    text = anime.score ?: "—",
                     modifier = Modifier.padding(
                         horizontal = MaterialTheme.spacing.spacing6,
                         vertical = MaterialTheme.spacing.spacing2 // ponytail: using spacing2 for vertical padding as approximation of 3.dp

@@ -1,11 +1,14 @@
 package ru.fefu.task3
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavType
@@ -34,6 +37,12 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val viewModel: AnimeViewModel = hiltViewModel()
+            val context = LocalContext.current
+            LaunchedEffect(Unit) {
+                viewModel.errorEvents.collect { message ->
+                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                }
+            }
             val isDarkThemePref by viewModel.isDarkTheme.collectAsStateWithLifecycle()
             val darkTheme = isDarkThemePref ?: true
 
@@ -110,7 +119,7 @@ class MainActivity : ComponentActivity() {
                             uiState = uiState,
                             note = note,
                             onLoad = viewModel::loadAnimeDetails,
-                            onRetryClick = { viewModel.loadAnimeDetails(animeId) },
+                            onRetryClick = viewModel::retryDetail,
                             onBackClick = { navController.popBackStack() },
                             onToggleFavourite = viewModel::toggleFavourite,
                             onSaveNote = { text, rating -> viewModel.saveNote(animeId, text, rating) }
