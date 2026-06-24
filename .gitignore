@@ -13,3 +13,13 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# IDE and compilation outputs
+/.idea/
+/.kotlin/
+
+# Documents and AI instructions
+*.pdf
+gemini.md
+review.txt
+docs/

@@ -1,3 +1,63 @@
 <resources>
-    <string name="app_name">task3</string>
+    <string name="app_name">Shikimori Anime</string>
+    <string name="error_prefix">Ошибка: %s</string>
+    <string name="retry_button">Повторить</string>
+    <string name="no_anime_found">Аниме не найдено.</string>
+    <string name="favourites_empty">В избранном пока пусто.</string>
+    <string name="description_label">Описание</string>
+    <string name="genres_label">Жанры</string>
+    <string name="description_missing">Описание отсутствует.</string>
+    <string name="info_label_rating">Рейтинг</string>
+    <string name="info_label_episodes">Эпизоды</string>
+    <string name="info_label_year">Год</string>
+    <string name="details_title">Информация</string>
+    <string name="favourites_title">Избранное</string>
+    <string name="search_placeholder">Найти аниме...</string>
+
+    <!-- Anime Kinds -->
+    <string name="kind_tv">TV Сериал</string>
+    <string name="kind_movie">Фильм</string>
+    <string name="kind_ova">OVA</string>
+    <string name="kind_ona">ONA</string>
+    <string name="kind_special">Спешл</string>
+    <string name="kind_music">Клип</string>
+    <string name="kind_unknown">Неизвестно</string>
+
+    <!-- Anime Status -->
+    <string name="status_released">Вышло</string>
+    <string name="status_ongoing">Онгоинг</string>
+    <string name="status_announced">Анонсировано</string>
+    <string name="status_unknown">Неизвестно</string>
+
+    <!-- Notes / Ratings -->
+    <string name="my_note">Моя заметка</string>
+    <string name="my_rating_label">Моя оценка: </string>
+    <string name="note_placeholder">Напишите личные впечатления об аниме...</string>
+    <string name="save_button">Сохранить</string>
+    <string name="note_saved_toast">Заметка сохранена</string>
+
+    <!-- History -->
+    <string name="history_title">История просмотров</string>
+    <string name="history_empty">История пуста</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Настройки</string>
+    <string name="settings_design_label">Оформление</string>
+    <string name="settings_dark_theme">Темная тема</string>
+    <string name="settings_users_title">Профили пользователей</string>
+    <string name="settings_delete_profile">Удалить профиль</string>
+    <string name="settings_clear_history">Очистить историю просмотров</string>
+    <string name="settings_new_profile_title">Новый профиль</string>
+    <string name="settings_username_label">Имя пользователя</string>
+    <string name="settings_create_button">Создать</string>
+    <string name="settings_cancel_button">Отмена</string>
+    <string name="settings_delete_profile_confirm_title">Удалить профиль?</string>
+    <string name="settings_delete_profile_confirm_desc">Вы действительно хотите удалить профиль \"%1$s\" и все его данные (избранное, историю, заметки)?</string>
+    <string name="settings_delete_confirm_action">Удалить</string>
+
+    <!-- Sorting -->
+    <string name="sort_label">Сортировка:</string>
+    <string name="sort_default">По умолчанию</string>
+    <string name="sort_by_rating">По моей оценке</string>
+    <string name="sort_by_name">По названию</string>
 </resources>
